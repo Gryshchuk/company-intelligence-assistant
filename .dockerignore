@@ -1,0 +1,12 @@
+.venv/
+.git/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.claude/
+.streamlit/
+data/
+__pycache__/
+*.pyc
+.DS_Store
+.env

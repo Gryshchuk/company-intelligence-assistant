@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    image: company-intel:latest
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      # Persist LanceDB tables + companies.json across container restarts.
+      - ./data:/app/data
+    restart: unless-stopped

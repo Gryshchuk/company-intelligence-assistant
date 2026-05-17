@@ -1,0 +1,14 @@
+# Anthropic / Claude-inspired palette.
+[theme]
+base = "dark"
+primaryColor = "#D97757"
+backgroundColor = "#262624"
+secondaryBackgroundColor = "#1F1E1C"
+textColor = "#E8E6E1"
+font = "sans-serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
