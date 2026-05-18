@@ -43,6 +43,7 @@ def _poll() -> None:
         state.start_research_flow(
             d.get("canonical_name") or ss.pending_name,
             d.get("domain"),
+            d.get("category"),
         )
     else:
         ss.candidates = d.get("candidates", [])

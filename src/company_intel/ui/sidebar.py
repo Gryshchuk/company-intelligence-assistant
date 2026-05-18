@@ -16,9 +16,8 @@ def render() -> None:
         if not companies:
             st.caption("No companies yet.")
         for row in companies:
-            label = row["name"] + (
-                f"  ·  {row['domain']}" if row.get("domain") else ""
-            )
+            qualifier = row.get("category") or row.get("domain") or ""
+            label = row["name"] + (f"  ·  {qualifier}" if qualifier else "")
             if st.button(label, key=f"co_{row['id']}", use_container_width=True):
                 state.open_company(row["id"])
                 st.rerun()

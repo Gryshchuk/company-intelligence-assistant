@@ -33,8 +33,13 @@ def _load_company() -> dict | None:
 
 def _render_header(company: dict) -> None:
     st.title(company["name"])
+    subtitle_bits = []
+    if company.get("category"):
+        subtitle_bits.append(company["category"])
     if company.get("domain"):
-        st.caption(company["domain"])
+        subtitle_bits.append(company["domain"])
+    if subtitle_bits:
+        st.caption("  ·  ".join(subtitle_bits))
     if company.get("summary"):
         st.write(company["summary"])
     else:

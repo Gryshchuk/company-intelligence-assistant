@@ -52,6 +52,7 @@ def upsert(
     name: str,
     domain: Optional[str],
     summary: str,
+    category: Optional[str] = None,
     competitors: Optional[list[str]] = None,
     local_peers: Optional[list[str]] = None,
     global_peers: Optional[list[str]] = None,
@@ -64,6 +65,8 @@ def upsert(
             domain=_normalize_domain(domain),
             summary=summary,
         )
+        if category is not None:
+            existing["category"] = category
         if competitors is not None:
             existing["competitors"] = competitors
         if local_peers is not None:
@@ -77,6 +80,7 @@ def upsert(
         "name": name,
         "domain": _normalize_domain(domain),
         "summary": summary,
+        "category": category,
         "competitors": competitors or [],
         "local_peers": local_peers or [],
         "global_peers": global_peers or [],

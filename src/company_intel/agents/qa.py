@@ -1,16 +1,16 @@
 """Q&A agent: plans, retrieves from the company's vector + FTS store, answers."""
 from __future__ import annotations
 
-import threading
 from typing import Optional
 
 from deepagents import create_deep_agent
 
 from .. import store
 from ..config import build_chat_model
-from ..eventbus import Task, TaskCallback, new_task, set_active_task
+from ..eventbus import Task, new_task, set_active_task
 from ..tools import set_active_company
 from ..tools.qa_search import keyword_search, vector_search
+from . import runtime
 
 QA_PROMPT = """\
 {company_context}
@@ -64,6 +64,20 @@ in the KB). Even then, give a partial answer first ("I don't see an \
 'X' product in our sources — here's what I do have about their \
 products: …") instead of asking blind.
 
+## NEVER offer to "guess" or "infer from descriptions"
+
+You have NO web access. You CANNOT generate new facts. If the KB \
+doesn't contain something the user asked about:
+- Say so plainly: "Not in the knowledge base for this company."
+- Suggest the user re-run research from the sidebar (this fetches \
+  fresh sources and rebuilds the KB).
+- Do NOT offer phrases like "I can list likely competitors based on \
+  product descriptions", "I can guess based on the category", \
+  "based on market context I'd say…". Those are inventions.
+- Do NOT propose competitors / financials / dates that don't appear \
+  verbatim in retrieved chunks. Categories ("other astrology apps") \
+  are NOT competitor names; do not present them as if they were.
+
 ## Output format — STRICT
 
 Your final message MUST contain ONLY the prose answer to the user. \
@@ -89,79 +103,20 @@ def _build_agent(company_name: str, domain: Optional[str]):
     )
 
 
-def _message_text(msg) -> str:
-    """Extract user-facing prose from an AIMessage.
-
-    Only text-typed parts count — tool-use / reasoning parts are skipped.
-    Leading JSON blobs (the model occasionally echoes its `write_todos`
-    arguments) are also stripped as a belt-and-braces guard against the
-    prompt rule failing.
-    """
-    content = getattr(msg, "content", msg)
-    if isinstance(content, str):
-        return _strip_leading_json(content)
-    if isinstance(content, list):
-        parts = []
-        for p in content:
-            if not isinstance(p, dict):
-                continue
-            # Accept untagged dicts or those explicitly typed as text.
-            if p.get("type") in (None, "text", "output_text"):
-                t = p.get("text", "")
-                if isinstance(t, str) and t.strip():
-                    parts.append(t)
-        return _strip_leading_json("".join(parts).strip())
-    return _strip_leading_json(str(content))
-
-
-def _strip_leading_json(text: str) -> str:
-    """If the message starts with a balanced JSON object/array, drop it."""
-    text = text.lstrip()
-    if not text or text[0] not in "{[":
-        return text
-    open_ch, close_ch = text[0], "}" if text[0] == "{" else "]"
-    depth, in_str, esc = 0, False, False
-    for i, ch in enumerate(text):
-        if in_str:
-            if esc:
-                esc = False
-            elif ch == "\\":
-                esc = True
-            elif ch == '"':
-                in_str = False
-        elif ch == '"':
-            in_str = True
-        elif ch == open_ch:
-            depth += 1
-        elif ch == close_ch:
-            depth -= 1
-            if depth == 0:
-                return text[i + 1:].lstrip()
-    return text
-
-
 def start_qa(company_id: str, question: str) -> Task:
     company = store.get(company_id)
     if company is None:
         raise ValueError(f"Unknown company {company_id}")
     task = new_task(title=f"Q&A: {question[:60]}")
-
-    def run():
-        try:
-            set_active_company(company_id)
-            set_active_task(task)
-            agent = _build_agent(company["name"], company.get("domain"))
-            cb = TaskCallback(task)
-            result = agent.invoke(
-                {"messages": [{"role": "user", "content": question}]},
-                config={"callbacks": [cb], "recursion_limit": 25},
-            )
-            task.result = {"answer": _message_text(result["messages"][-1])}
-            task.status = "done"
-        except Exception as e:
-            task.status = "error"
-            task.error = str(e)
-            task.push_notice("error", str(e))
-
-    threading.Thread(target=run, daemon=True).start()
+    runtime.run_in_background(task, _do_qa, task, company_id, company, question)
     return task
+
+
+def _do_qa(task: Task, company_id: str, company: dict, question: str) -> None:
+    set_active_company(company_id)
+    set_active_task(task)
+    agent = _build_agent(company["name"], company.get("domain"))
+    state = runtime.run_agent(agent, question, task, recursion_limit=25)
+    last_msg = (state.get("messages") or [None])[-1]
+    task.result = {"answer": runtime.extract_text(last_msg)}
+    task.status = "done"

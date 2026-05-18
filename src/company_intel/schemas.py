@@ -21,6 +21,15 @@ class Candidate(BaseModel):
         default=None,
         description="Primary web domain if known (no protocol, e.g. 'figma.com').",
     )
+    category: Optional[str] = Field(
+        default=None,
+        description=(
+            "Short industry / vertical phrase that downstream search queries "
+            "can append to the company name to narrow results, e.g. "
+            "'astrology app', 'design tool', 'B2B SaaS for HR analytics', "
+            "'food delivery'. 2-5 words."
+        ),
+    )
 
 
 class Disambiguation(BaseModel):
@@ -32,6 +41,13 @@ class Disambiguation(BaseModel):
     )
     domain: Optional[str] = Field(
         default=None, description="If clear, the primary web domain."
+    )
+    category: Optional[str] = Field(
+        default=None,
+        description=(
+            "If clear, the short industry / vertical phrase (2-5 words) "
+            "that downstream queries can use to qualify the company name."
+        ),
     )
     candidates: list[Candidate] = Field(
         default_factory=list,

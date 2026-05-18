@@ -44,10 +44,22 @@ Private companies usually disclose only a subset; that's fine.
 
 ## Procedure (in priority order)
 
-1. **Tracxn** — `web_search` for `site:tracxn.com "<company>" funding`,
-   then `index_url(<tracxn url>)`. Tracxn pages include both funding
-   data and select operating metrics.
-2. **Crunchbase** — search, then `index_url` the company profile.
+1. **Tracxn** — `web_search` for `site:tracxn.com "<company>" funding`.
+
+   ⚠️ **Tracxn frequently returns a page for a different company with
+   a similar name.** Before using any Tracxn page:
+   - `fetch_url` the page first (preview is enough) and confirm the
+     company name, domain, HQ, founders, or industry match the TARGET.
+     Compare against what you already know from the overview skill.
+   - If the page is for a different entity, SKIP it. Do not
+     `index_url` it and do not quote any numbers from it. Wrong
+     financials are worse than missing financials.
+   - Only after the page is verified as the right company, call
+     `index_url(<tracxn url>)` to ingest it. The
+     `#funding-and-investors` anchor has round-by-round details.
+2. **Crunchbase** — search, then `index_url` the company profile. Same
+   verification: if the Crunchbase page is for a different company,
+   skip it.
 3. **PitchBook / Owler / Dealroom** — `index_url` what surfaces.
 4. **Annual reports / 10-K / 10-Q** (public companies) — search
    `"<company>" annual report <current-year>` or

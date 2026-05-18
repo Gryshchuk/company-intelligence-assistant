@@ -56,7 +56,11 @@ def start_disambiguation_flow(input_text: str) -> None:
     ss.view = "disambiguating"
 
 
-def start_research_flow(name: str, domain: Optional[str]) -> None:
+def start_research_flow(
+    name: str,
+    domain: Optional[str],
+    category: Optional[str] = None,
+) -> None:
     """If we already know this company, just open it. Otherwise kick off
     research and switch to the researching view."""
     existing = store.find(name, domain)
@@ -64,7 +68,7 @@ def start_research_flow(name: str, domain: Optional[str]) -> None:
         open_company(existing["id"])
         st.toast(f"Opened existing record for {existing['name']}.")
         return
-    task = start_research(name=name, domain=domain)
+    task = start_research(name=name, domain=domain, category=category)
     st.session_state.active_task_id = task.id
     st.session_state.view = "researching"
 

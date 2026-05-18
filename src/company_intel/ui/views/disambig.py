@@ -19,11 +19,14 @@ def render() -> None:
 def _render_candidate(i: int, cand: dict) -> None:
     with st.container(border=True):
         domain = cand.get("domain")
-        title = f"**{cand['name']}**" + (f"  ·  `{domain}`" if domain else "")
+        category = cand.get("category")
+        title = f"**{cand['name']}**"
+        if category:
+            title += f"  ·  _{category}_"
         st.markdown(title)
         st.write(cand["description"])
         if st.button("Pick this one", key=f"cand_{i}"):
-            state.start_research_flow(cand["name"], domain)
+            state.start_research_flow(cand["name"], domain, category)
             st.rerun()
 
 
